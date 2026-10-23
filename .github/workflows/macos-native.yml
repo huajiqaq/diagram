@@ -3,7 +3,7 @@ name: macOS Native
 on:
   pull_request:
   push:
-    branches: [master]
+    branches: [master, 'feat/**']
   workflow_dispatch:
 
 permissions:
