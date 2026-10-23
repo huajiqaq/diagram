@@ -24,6 +24,8 @@ jobs:
           java-version: 21
           architecture: aarch64
       - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
       - uses: gradle/actions/setup-gradle@v4
       - name: Run all four SDK Native test suites
         run: |
