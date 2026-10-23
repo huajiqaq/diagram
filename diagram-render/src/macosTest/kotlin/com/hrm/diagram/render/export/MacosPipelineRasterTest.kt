@@ -87,12 +87,26 @@ class MacosPipelineRasterTest {
                                                         val characterCount = range.count { expectedText[it] != '\n' }
                                                         assertEquals(4, characterCount, "Each line must contain all four Chinese characters")
                                                         val runs = CTLineGetGlyphRuns(line)
-                                                        var glyphCount = 0L
+                                                        val glyphCharacters = mutableSetOf<Int>()
                                                         for (runIndex in 0 until CFArrayGetCount(runs)) {
                                                             val run: CTRunRef = checkNotNull(CFArrayGetValueAtIndex(runs, runIndex)).reinterpret()
-                                                            glyphCount += CTRunGetGlyphCount(run)
+                                                            val count = CTRunGetGlyphCount(run)
+                                                            memScoped {
+                                                                val indices = allocArray<LongVar>(count)
+                                                                val glyphs = allocArray<UShortVar>(count)
+                                                                CTRunGetStringIndices(run, CFRangeMake(0, 0), indices)
+                                                                CTRunGetGlyphs(run, CFRangeMake(0, 0), glyphs)
+                                                                for (glyph in 0 until count.toInt()) {
+                                                                    val character = indices[glyph].toInt()
+                                                                    if (character in range && expectedText[character] != '\n') {
+                                                                        assertTrue(glyphs[glyph] != 0.toUShort(), "Missing native glyph for ${expectedText[character]}")
+                                                                        glyphCharacters += character
+                                                                    }
+                                                                }
+                                                            }
                                                         }
-                                                        assertEquals(4L, glyphCount, "Each native line must retain all four CJK glyphs")
+                                                        assertEquals(range.filter { expectedText[it] != '\n' }.toSet(), glyphCharacters,
+                                                            "Every Chinese character must retain its own CoreText glyph; newline glyphs are not visible text")
                                                         val advance = CTLineGetTypographicBounds(line, null, null, null)
                                                         val left = when (command.anchorX) {
                                                             com.hrm.diagram.core.draw.TextAnchorX.Start -> command.origin.x.toDouble()
